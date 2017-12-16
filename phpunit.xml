@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/autoload.php" backupGlobals="false">
+    <testsuites>
+        <testsuite name="PSX Sandbox Test Suite">
+            <directory>./tests</directory>
+            <exclude>./tests/cache</exclude>
+            <exclude>./tests/safe</exclude>
+            <exclude>./tests/unsafe</exclude>
+        </testsuite>
+    </testsuites>
+    <filter>
+        <whitelist>
+            <directory suffix=".php">./src</directory>
+        </whitelist>
+    </filter>
+    <php>
+        <ini name="date.timezone" value="UTC" />
+    </php>
+</phpunit>
