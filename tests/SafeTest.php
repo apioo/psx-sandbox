@@ -20,8 +20,6 @@
 
 namespace PSX\Sandbox\Tests;
 
-use PSX\Sandbox\Runtime;
-
 /**
  * SafeTest
  *

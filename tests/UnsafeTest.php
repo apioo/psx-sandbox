@@ -20,9 +20,6 @@
 
 namespace PSX\Sandbox\Tests;
 
-use PSX\Sandbox\Runtime;
-use PSX\Sandbox\SecurityException;
-
 /**
  * UnsafeTest
  *
