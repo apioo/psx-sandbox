@@ -15,6 +15,9 @@ all functions which produce output i.e. echo, print, etc. are not allowed. The
 only way a user can return a value is by using the `return` statement in the 
 script. Every function and new call gets checked by the security manager. The 
 security manager contains a whitelist of all allowed functions and classes. 
+
+Its important to note that the security check is _not_ performed on runtime, 
+instead we simply prevent to generate PHP code which contains untrusted code.
 Because of this features like i.e. dynamic functions names 
 `$func = 'foo'; $func();` are also not allowed.
 
