@@ -509,7 +509,7 @@ class SecurityManager
      */
     public function checkFunctionCall($functionName, array $arguments = [])
     {
-        $functionName = strtolower(ltrim($functionName, '\\'));
+        $functionName = ltrim($functionName, '\\');
 
         if (!in_array($functionName, $this->allowedFunctions)) {
             throw new SecurityException('Call to a not allowed function ' . $functionName);
@@ -541,7 +541,7 @@ class SecurityManager
     }
 
     /**
-     * @param string $functionName
+     * @param string $className
      * @throws \PSX\Sandbox\SecurityException
      */
     public function checkNewCall($className)
