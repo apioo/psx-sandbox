@@ -564,7 +564,7 @@ class Printer extends PrettyPrinterAbstract
     {
         $functionName = $this->pCallLhs($node->name);
 
-        $this->securityManager->checkFunctionCall($functionName);
+        $this->securityManager->checkFunctionCall($functionName, $node->args);
 
         return $functionName
             . '(' . $this->pMaybeMultiline($node->args) . ')';

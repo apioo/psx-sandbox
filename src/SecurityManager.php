@@ -20,6 +20,8 @@
 
 namespace PSX\Sandbox;
 
+use PhpParser\Node;
+
 /**
  * SecurityManager
  *
@@ -167,8 +169,6 @@ class SecurityManager
         'preg_match',
         'preg_match_all',
         'preg_replace',
-        'preg_replace_callback',
-        'preg_replace_callback_array',
         'preg_filter',
         'preg_split',
         'preg_quote',
@@ -242,8 +242,6 @@ class SecurityManager
         'explode',
         'implode',
         'join',
-        'setlocale',
-        'localeconv',
         'soundex',
         'levenshtein',
         'chr',
@@ -326,9 +324,6 @@ class SecurityManager
         'uniqid',
         'quoted_printable_decode',
         'quoted_printable_encode',
-        'convert_cyr_string',
-        'forward_static_call',
-        'forward_static_call_array',
         'intval',
         'floatval',
         'doubleval',
@@ -408,20 +403,10 @@ class SecurityManager
         'array_unique',
         'array_intersect',
         'array_intersect_key',
-        'array_intersect_ukey',
-        'array_uintersect',
         'array_intersect_assoc',
-        'array_uintersect_assoc',
-        'array_intersect_uassoc',
-        'array_uintersect_uassoc',
         'array_diff',
         'array_diff_key',
-        'array_diff_ukey',
-        'array_udiff',
         'array_diff_assoc',
-        'array_udiff_assoc',
-        'array_diff_uassoc',
-        'array_udiff_uassoc',
         'array_sum',
         'array_product',
         'array_filter',
@@ -467,8 +452,6 @@ class SecurityManager
         'IteratorIterator',
         'FilterIterator',
         'RecursiveFilterIterator',
-        'CallbackFilterIterator',
-        'RecursiveCallbackFilterIterator',
         'ParentIterator',
         'LimitIterator',
         'CachingIterator',
@@ -519,15 +502,48 @@ class SecurityManager
         $this->allowedClasses[] = $className;
     }
 
-    public function checkFunctionCall($functionName)
+    /**
+     * @param string $functionName
+     * @param array $arguments
+     * @throws \PSX\Sandbox\SecurityException
+     */
+    public function checkFunctionCall($functionName, array $arguments = [])
     {
-        $functionName = ltrim($functionName, '\\');
+        $functionName = strtolower(ltrim($functionName, '\\'));
 
         if (!in_array($functionName, $this->allowedFunctions)) {
             throw new SecurityException('Call to a not allowed function ' . $functionName);
         }
+
+        // check specific function arguments
+        if ($functionName === 'array_map') {
+            $callable = $this->getArgumentAt($arguments, 0);
+            if ($callable instanceof Node\Arg) {
+                $this->checkCallable($callable);
+            } else {
+                throw new SecurityException('array_map missing callable at position 0');
+            }
+        } elseif ($functionName === 'iterator_apply' || $functionName === 'array_walk' || $functionName === 'array_walk_recursive' || $functionName === 'array_reduce' || $functionName === 'array_filter') {
+            $callable = $this->getArgumentAt($arguments, 1);
+            if ($callable instanceof Node\Arg) {
+                $this->checkCallable($callable);
+            } else {
+                throw new SecurityException($functionName . ' missing callable at position 1');
+            }
+        } elseif ($functionName === 'usort' || $functionName === 'uasort' || $functionName === 'uksort') {
+            $callable = $this->getArgumentAt($arguments, 1);
+            if ($callable instanceof Node\Arg) {
+                $this->checkCallable($callable);
+            } else {
+                throw new SecurityException($functionName . ' missing callable at position 1');
+            }
+        }
     }
 
+    /**
+     * @param string $functionName
+     * @throws \PSX\Sandbox\SecurityException
+     */
     public function checkNewCall($className)
     {
         $className = ltrim($className, '\\');
@@ -535,5 +551,34 @@ class SecurityManager
         if (!in_array($className, $this->allowedClasses)) {
             throw new SecurityException('Call to a not allowed class ' . $className);
         }
+    }
+
+    /**
+     * @param \PhpParser\Node\Arg $callable
+     * @throws \PSX\Sandbox\SecurityException
+     */
+    private function checkCallable(Node\Arg $callable)
+    {
+        $value = $callable->value;
+        if ($value instanceof Node\Scalar\String_) {
+            $this->checkFunctionCall($value->value);
+        } elseif ($value instanceof Node\Expr\Closure) {
+        } else {
+            throw new SecurityException('Usage of an invalid callable type, only string and closure allowed');
+        }
+    }
+
+    /**
+     * @param array $nodes
+     * @param integer $pos
+     * @return \PhpParser\Node\Arg|null
+     */
+    private function getArgumentAt(array $nodes, $pos)
+    {
+        $nodes = array_filter($nodes, function($node){
+            return $node instanceof Node\Arg;
+        });
+
+        return $nodes[$pos] ?? null;
     }
 }
