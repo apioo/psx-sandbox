@@ -2,6 +2,7 @@
 Return array
 --FILE--
 <?php
-return ['foo' => $foo]; ?>
+return ['foo' => $foo];
+
 --EXPECT--
 {"foo": "bar"}
