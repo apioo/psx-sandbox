@@ -20,6 +20,7 @@
 
 namespace PSX\Sandbox\Tests;
 
+use PHPUnit\Framework\TestCase;
 use PSX\Sandbox\Runtime;
 
 /**
@@ -29,9 +30,9 @@ use PSX\Sandbox\Runtime;
  * @license http://www.apache.org/licenses/LICENSE-2.0
  * @link    http://phpsx.org
  */
-abstract class PHPTestCase extends \PHPUnit_Framework_TestCase
+abstract class PHPTestCase extends TestCase
 {
-    public function testProvider()
+    public function caseProvider()
     {
         $path  = $this->getDir();
         $files = scandir($path);

@@ -30,7 +30,7 @@ namespace PSX\Sandbox\Tests;
 class UnsafeTest extends PHPTestCase
 {
     /**
-     * @dataProvider testProvider
+     * @dataProvider caseProvider
      * @expectedException \PSX\Sandbox\SecurityException
      */
     public function testSafe($name, $code, $expect)

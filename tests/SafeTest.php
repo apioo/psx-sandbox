@@ -30,7 +30,7 @@ namespace PSX\Sandbox\Tests;
 class SafeTest extends PHPTestCase
 {
     /**
-     * @dataProvider testProvider
+     * @dataProvider caseProvider
      */
     public function testSafe($name, $code, $expect)
     {
