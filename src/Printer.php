@@ -820,6 +820,8 @@ class Printer extends PrettyPrinterAbstract
 
     protected function pStmt_Function(Stmt\Function_ $node)
     {
+        $this->securityManager->addAllowedFunction($node->name);
+
         return 'function ' . ($node->byRef ? '&' : '') . $node->name
             . '(' . $this->pCommaSeparated($node->params) . ')'
             . (null !== $node->returnType ? ' : ' . $this->pType($node->returnType) : '')
