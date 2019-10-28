@@ -47,10 +47,11 @@ class Printer extends PrettyPrinterAbstract
 
     /**
      * @param \PSX\Sandbox\SecurityManager $securityManager
+     * @param array $options
      */
-    public function __construct(SecurityManager $securityManager)
+    public function __construct(SecurityManager $securityManager, array $options = [])
     {
-        parent::__construct();
+        parent::__construct($options);
 
         $this->securityManager = $securityManager;
     }
@@ -478,11 +479,19 @@ class Printer extends PrettyPrinterAbstract
 
     protected function pExpr_UnaryMinus(Expr\UnaryMinus $node)
     {
+        if ($node->expr instanceof Expr\UnaryMinus || $node->expr instanceof Expr\PreDec) {
+            // Enforce -(-$expr) instead of --$expr
+            return '-(' . $this->p($node->expr) . ')';
+        }
         return $this->pPrefixOp('Expr_UnaryMinus', '-', $node->expr);
     }
 
     protected function pExpr_UnaryPlus(Expr\UnaryPlus $node)
     {
+        if ($node->expr instanceof Expr\UnaryPlus || $node->expr instanceof Expr\PreInc) {
+            // Enforce +(+$expr) instead of ++$expr
+            return '+(' . $this->p($node->expr) . ')';
+        }
         return $this->pPrefixOp('Expr_UnaryPlus', '+', $node->expr);
     }
 
