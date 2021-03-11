@@ -480,6 +480,7 @@ class SecurityManager
         'SimpleXMLElement',
         'SimpleXMLIterator',
         'NumberFormatter',
+        'Swift_Message',
     ];
 
     public function setAllowedFunctions(array $allowedFunctions)
