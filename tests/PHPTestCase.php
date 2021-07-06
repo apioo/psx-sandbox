@@ -79,58 +79,27 @@ abstract class PHPTestCase extends TestCase
      */
     private function parseSections($file)
     {
-        // Load the sections of the test file.
-        $section_text = array('TEST' => '');
-        $fp = fopen($file, "rb");
-        $borked = false;
-        $bork_info = '';
-        if (!feof($fp)) {
-            $line = fgets($fp);
-            if ($line === false) {
-                $bork_info = "cannot read test";
-                $borked = true;
-            }
-        } else {
-            $bork_info = "empty test [$file]";
-            $borked = true;
-        }
-        if (!$borked && strncmp('--TEST--', $line, 8)) {
-            $bork_info = "tests must start with --TEST-- [$file]";
-            $borked = true;
-        }
-        $section = 'TEST';
-        $secfile = false;
-        $secdone = false;
-        while (!feof($fp)) {
-            $line = fgets($fp);
-            if ($line === false) {
-                break;
-            }
+        $lines = file($file);
+        $sections = [];
+        $section = null;
+        foreach ($lines as $line) {
             // Match the beginning of a section.
             if (preg_match('/^--([_A-Z]+)--/', $line, $r)) {
-                $section = $r[1];
-                settype($section, 'string');
-                if (isset($section_text[$section]) && $section_text[$section]) {
-                    $bork_info = "duplicated $section section";
-                    $borked    = true;
+                $section = (string) $r[1];
+
+                if (isset($sections[$section]) && $sections[$section]) {
+                    throw new \RuntimeException("duplicated $section section");
                 }
-                $section_text[$section] = '';
-                $secfile = $section == 'FILE' || $section == 'FILEEOF' || $section == 'FILE_EXTERNAL';
-                $secdone = false;
+
+                $sections[$section] = '';
                 continue;
             }
-            // Add to the section text.
-            if (!$secdone) {
-                $section_text[$section] .= $line;
-            }
-            // End of actual test?
-            if ($secfile && preg_match('/^===DONE===\s*$/', $line)) {
-                $secdone = true;
+
+            if (isset($sections[$section])) {
+                $sections[$section] .= $line;
             }
         }
 
-        fclose($fp);
-
-        return $section_text;
+        return $sections;
     }
 }

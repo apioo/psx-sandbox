@@ -74,6 +74,10 @@ class Parser
             throw new ParseException($error->getMessage(), 0, $error);
         }
 
+        if ($ast === null) {
+            throw new ParseException('Found no tokens');
+        }
+
         $printer = new Printer($this->securityManager);
         return $printer->prettyPrintFile($ast);
     }

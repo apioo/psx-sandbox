@@ -20,6 +20,8 @@
 
 namespace PSX\Sandbox\Tests;
 
+use PSX\Sandbox\SecurityException;
+
 /**
  * UnsafeTest
  *
@@ -31,10 +33,11 @@ class UnsafeTest extends PHPTestCase
 {
     /**
      * @dataProvider caseProvider
-     * @expectedException \PSX\Sandbox\SecurityException
      */
     public function testSafe($name, $code, $expect)
     {
+        $this->expectException(SecurityException::class);
+
         $this->newRuntime(md5($code))->run($code);
     }
 
