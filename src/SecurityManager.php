@@ -31,7 +31,7 @@ use PhpParser\Node;
  */
 class SecurityManager
 {
-    protected $allowedFunctions = [
+    private array $allowedFunctions = [
         'func_num_args',
         'func_get_arg',
         'func_get_args',
@@ -419,7 +419,7 @@ class SecurityManager
         'key_exists',
     ];
 
-    protected $allowedClasses = [
+    private array $allowedClasses = [
         'stdClass',
         'Exception',
         'ErrorException',
@@ -488,7 +488,7 @@ class SecurityManager
         $this->allowedFunctions = $allowedFunctions;
     }
 
-    public function addAllowedFunction($functionName)
+    public function addAllowedFunction(string $functionName)
     {
         $this->allowedFunctions[] = $functionName;
     }
@@ -498,17 +498,15 @@ class SecurityManager
         $this->allowedClasses = $allowedClasses;
     }
 
-    public function addAllowedClass($className)
+    public function addAllowedClass(string $className)
     {
         $this->allowedClasses[] = $className;
     }
 
     /**
-     * @param string $functionName
-     * @param array $arguments
-     * @throws \PSX\Sandbox\SecurityException
+     * @throws SecurityException
      */
-    public function checkFunctionCall($functionName, array $arguments = [])
+    public function checkFunctionCall(string $functionName, array $arguments = [])
     {
         $functionName = ltrim($functionName, '\\');
 
@@ -542,10 +540,9 @@ class SecurityManager
     }
 
     /**
-     * @param string $className
-     * @throws \PSX\Sandbox\SecurityException
+     * @throws SecurityException
      */
-    public function checkNewCall($className)
+    public function checkNewCall(string $className)
     {
         $className = ltrim($className, '\\');
 
@@ -555,8 +552,7 @@ class SecurityManager
     }
 
     /**
-     * @param \PhpParser\Node\Arg $callable
-     * @throws \PSX\Sandbox\SecurityException
+     * @throws SecurityException
      */
     private function checkCallable(Node\Arg $callable)
     {
@@ -569,12 +565,7 @@ class SecurityManager
         }
     }
 
-    /**
-     * @param array $nodes
-     * @param integer $pos
-     * @return \PhpParser\Node\Arg|null
-     */
-    private function getArgumentAt(array $nodes, $pos)
+    private function getArgumentAt(array $nodes, int $pos): ?Node\Arg
     {
         $nodes = array_filter($nodes, function($node){
             return $node instanceof Node\Arg;

@@ -29,35 +29,16 @@ namespace PSX\Sandbox;
  */
 class Runtime
 {
-    /**
-     * @var string
-     */
-    protected $token;
-
-    /**
-     * @var \PSX\Sandbox\Parser
-     */
-    protected $parser;
-
-    /**
-     * @var string
-     */
-    protected $cachePath;
-
-    /**
-     * @var array
-     */
-    protected $context;
+    private string $token;
+    private Parser $parser;
+    private ?string $cachePath;
+    private array $context;
 
     /**
      * Creates a new runtime. Every runtime has a specific security token which 
      * is used to determine the file name where we store the clean code
-     * 
-     * @param string $token
-     * @param \PSX\Sandbox\Parser|null $parser
-     * @param string|null $cachePath
      */
-    public function __construct($token, Parser $parser = null, $cachePath = null)
+    public function __construct(string $token, ?Parser $parser = null, ?string $cachePath = null)
     {
         $this->token     = $token;
         $this->parser    = $parser ?? new Parser();
@@ -65,22 +46,16 @@ class Runtime
         $this->context   = [];
     }
 
-    /**
-     * @param string $name
-     * @param mixed $value
-     */
-    public function set($name, $value)
+    public function set(string $name, mixed $value)
     {
         $this->context[$name] = $value;
     }
 
     /**
-     * @param string $code
-     * @return mixed
-     * @throws \PSX\Sandbox\ParseException
-     * @throws \PSX\Sandbox\SecurityException
+     * @throws ParseException
+     * @throws SecurityException
      */
-    public function run($code)
+    public function run(string $code): mixed
     {
         $file = $this->cachePath . '/runtime_' . substr(md5($this->token), 0, 8) . '.php';
 

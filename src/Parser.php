@@ -32,20 +32,9 @@ use PhpParser\ParserFactory;
  */
 class Parser
 {
-    /**
-     * @var \PSX\Sandbox\SecurityManager
-     */
-    protected $securityManager;
-
-    /**
-     * @var integer
-     */
-    protected $parserType;
-
-    /**
-     * @var \PhpParser\ParserFactory
-     */
-    protected $parserFactory;
+    private SecurityManager $securityManager;
+    private int $parserType;
+    private ParserFactory $parserFactory;
 
     public function __construct(SecurityManager $securityManager = null, $parserType = ParserFactory::PREFER_PHP7)
     {
@@ -59,12 +48,10 @@ class Parser
      * contains safe calls. Throws an exception in case the code contains 
      * untrusted calls
      * 
-     * @throws \PSX\Sandbox\SecurityException
-     * @throws \PSX\Sandbox\ParseException
-     * @param string $code
-     * @return string
+     * @throws SecurityException
+     * @throws ParseException
      */
-    public function parse($code)
+    public function parse(string $code): string
     {
         $parser = $this->parserFactory->create($this->parserType);
 

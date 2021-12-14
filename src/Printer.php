@@ -33,15 +33,8 @@ use PhpParser\PrettyPrinter\Standard;
  */
 class Printer extends Standard
 {
-    /**
-     * @var \PSX\Sandbox\SecurityManager
-     */
-    protected $securityManager;
+    private SecurityManager $securityManager;
 
-    /**
-     * @param \PSX\Sandbox\SecurityManager $securityManager
-     * @param array $options
-     */
     public function __construct(SecurityManager $securityManager, array $options = [])
     {
         parent::__construct($options);
