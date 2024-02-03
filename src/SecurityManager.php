@@ -483,13 +483,23 @@ class SecurityManager
         'Swift_Message',
     ];
 
+    private array $functionAliases = [];
+    private array $classAliases = [];
+
+    private null|string $currentNamespace = null;
+
+
     public function setAllowedFunctions(array $allowedFunctions)
     {
         $this->allowedFunctions = $allowedFunctions;
     }
 
-    public function addAllowedFunction(string $functionName)
+    public function addAllowedFunction(string $functionName): void
     {
+        if ($this->currentNamespace !== null) {
+            $functionName = "{$this->currentNamespace}\\{$functionName}";
+        }
+
         $this->allowedFunctions[] = $functionName;
     }
 
@@ -503,11 +513,41 @@ class SecurityManager
         $this->allowedClasses[] = $className;
     }
 
+    public function setCurrentNamespace(?string $currentNamespace): void
+    {
+        if ($currentNamespace !== null) {
+            $currentNamespace = \ltrim($currentNamespace, '\\');
+        }
+
+        $this->currentNamespace = !empty($currentNamespace) ? $currentNamespace : null;
+    }
+
+    public function currentNamespace(): null|string
+    {
+        return $this->currentNamespace;
+    }
+
+    public function addFunctionAlias(string $function, string $alias): void
+    {
+        $this->functionAliases[$alias] = $function;
+    }
+
+    public function addClassAlias(string $class, string $alias): void
+    {
+        $this->classAliases[$alias] = $class;
+    }
+
     /**
      * @throws SecurityException
      */
     public function checkFunctionCall(string $functionName, array $arguments = [])
     {
+        if (isset($this->functionAliases[$functionName])) {
+            $functionName = $this->functionAliases[$functionName];
+        }
+
+        $functionName = $this->fullyQualifyNamespacedFunction($functionName);
+
         $functionName = ltrim($functionName, '\\');
 
         if (!in_array($functionName, $this->allowedFunctions)) {
@@ -539,11 +579,38 @@ class SecurityManager
         }
     }
 
+    private function fullyQualifyNamespacedFunction(string $functionName): string
+    {
+        // check \<function> <= explicit call to global function
+        if (\preg_match('/^\\\\[\w]+$/', $functionName)) {
+            return $functionName;
+        }
+
+        // check <function>
+        if (!\str_contains($functionName, '\\')) {
+            return "{$this->currentNamespace()}\\{$functionName}";
+        }
+        // check namespace\<function>
+        elseif (\str_starts_with($functionName, 'namespace\\')) {
+            return "{$this->currentNamespace()}\\" . \substr($functionName, \strlen('namespace\\'));
+        }
+        // check \foo\<function> or foo\<function>
+        elseif (\preg_match_all('/^(\\\\?[\w\\\\]+)\\\\(\w+)$/', $functionName, $matches)) {
+            return \ltrim($matches[1][0], '\\') . "\\{$matches[2][0]}";
+        }
+
+        return $functionName;
+    }
+
     /**
      * @throws SecurityException
      */
     public function checkNewCall(string $className)
     {
+        if (isset($this->classAliases[$className])) {
+            $className = $this->classAliases[$className];
+        }
+
         $className = ltrim($className, '\\');
 
         if (!in_array($className, $this->allowedClasses)) {

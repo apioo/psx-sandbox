@@ -175,4 +175,48 @@ class Printer extends Standard
     {
         throw new SecurityException('Class is not allowed');
     }
+
+    protected function pStmt_Namespace(Stmt\Namespace_ $node)
+    {
+        $this->securityManager->setCurrentNamespace($node->name !== null ? (string)$node->name : null);
+
+        if ($this->canUseSemicolonNamespaces) {
+            return 'namespace ' . $this->p($node->name) . ';'
+                . $this->nl . $this->pStmts($node->stmts, false);
+        } else {
+            return 'namespace' . (null !== $node->name ? ' ' . $this->p($node->name) : '')
+                . ' {' . $this->pStmts($node->stmts) . $this->nl . '}';
+        }
+    }
+
+    protected function pStmt_Use(Stmt\Use_ $node)
+    {
+        foreach ($node->uses as $use) {
+            if ($node->type === Stmt\Use_::TYPE_NORMAL) {
+                $this->securityManager->addClassAlias((string)$use->name, (string)($use->alias ?? $use->name));
+            }
+            elseif ($node->type === Stmt\Use_::TYPE_FUNCTION) {
+                $this->securityManager->addFunctionAlias((string)$use->name, (string)($use->alias ?? $use->name));
+            }
+        }
+
+        return 'use ' . $this->pUseType($node->type)
+            . $this->pCommaSeparated($node->uses) . ';';
+    }
+
+    protected function pStmt_GroupUse(Stmt\GroupUse $node)
+    {
+        foreach ($node->uses as $use) {
+            if ($node->type === Stmt\Use_::TYPE_NORMAL) {
+                $this->securityManager->addClassAlias((string)$use->name, (string)($use->alias ?? $use->name));
+            }
+            elseif ($node->type === Stmt\Use_::TYPE_FUNCTION) {
+                $this->securityManager->addFunctionAlias((string)$use->name, (string)($use->alias ?? $use->name));
+            }
+        }
+
+        return 'use ' . $this->pUseType($node->type) . $this->pName($node->prefix)
+            . '\{' . $this->pCommaSeparated($node->uses) . '};';
+    }
+
 }
