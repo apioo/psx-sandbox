@@ -579,21 +579,21 @@ class SecurityManager
 
         // check specific function arguments
         if ($functionName === 'array_map') {
-            $callable = $this->getArgumentAt($arguments, 0);
+            $callable = $this->getArgumentAt($functionName, $arguments, 0);
             if ($callable instanceof Node\Arg) {
                 $this->checkCallable($callable);
             } else {
                 throw new SecurityException('array_map missing callable at position 0');
             }
         } elseif ($functionName === 'iterator_apply' || $functionName === 'array_walk' || $functionName === 'array_walk_recursive' || $functionName === 'array_reduce' || $functionName === 'array_filter') {
-            $callable = $this->getArgumentAt($arguments, 1);
+            $callable = $this->getArgumentAt($functionName, $arguments, 1);
             if ($callable instanceof Node\Arg) {
                 $this->checkCallable($callable);
             } else {
                 throw new SecurityException($functionName . ' missing callable at position 1');
             }
         } elseif ($functionName === 'usort' || $functionName === 'uasort' || $functionName === 'uksort') {
-            $callable = $this->getArgumentAt($arguments, 1);
+            $callable = $this->getArgumentAt($functionName, $arguments, 1);
             if ($callable instanceof Node\Arg) {
                 $this->checkCallable($callable);
             } else {
@@ -698,11 +698,21 @@ class SecurityManager
         }
     }
 
-    private function getArgumentAt(array $nodes, int $pos): ?Node\Arg
+    private function getArgumentAt(string $functionName, array $nodes, int $pos): ?Node\Arg
     {
-        $nodes = array_filter($nodes, function($node){
+        $nodes = array_filter($nodes, function ($node) {
             return $node instanceof Node\Arg;
         });
+
+        $reflection = new \ReflectionFunction($functionName);
+        $name = $reflection->getParameters()[$pos]->getName();
+
+        /** @var Node\Arg[] $node */
+        foreach ($nodes as $node) {
+            if ((string)$node->name === $name) {
+                return $node;
+            }
+        }
 
         return $nodes[$pos] ?? null;
     }
