@@ -186,13 +186,7 @@ class Printer extends Standard
     {
         $this->securityManager->setCurrentNamespace($node->name !== null ? (string)$node->name : null);
 
-        if ($this->canUseSemicolonNamespaces) {
-            return 'namespace ' . $this->p($node->name) . ';'
-                . $this->nl . $this->pStmts($node->stmts, false);
-        } else {
-            return 'namespace' . (null !== $node->name ? ' ' . $this->p($node->name) : '')
-                . ' {' . $this->pStmts($node->stmts) . $this->nl . '}';
-        }
+        return parent::pStmt_Namespace( $node );
     }
 
     protected function pStmt_Use(Stmt\Use_ $node)
@@ -206,8 +200,7 @@ class Printer extends Standard
             }
         }
 
-        return 'use ' . $this->pUseType($node->type)
-            . $this->pCommaSeparated($node->uses) . ';';
+        return parent::pStmt_Use( $node );
     }
 
     protected function pStmt_GroupUse(Stmt\GroupUse $node)
@@ -221,8 +214,7 @@ class Printer extends Standard
             }
         }
 
-        return 'use ' . $this->pUseType($node->type) . $this->pName($node->prefix)
-            . '\{' . $this->pCommaSeparated($node->uses) . '};';
+        return parent::pStmt_GroupUse( $node );
     }
 
 }
