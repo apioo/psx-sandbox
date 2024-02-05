@@ -704,10 +704,11 @@ class SecurityManager
             return $node instanceof Node\Arg;
         });
 
+        /** @var callable-string $functionName */
         $reflection = new \ReflectionFunction($functionName);
         $name = $reflection->getParameters()[$pos]->getName();
 
-        /** @var Node\Arg[] $node */
+        /** @var Node\Arg $node */
         foreach ($nodes as $node) {
             if ((string)$node->name === $name) {
                 return $node;
