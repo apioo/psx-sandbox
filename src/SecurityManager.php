@@ -31,6 +31,9 @@ use PhpParser\Node;
  */
 class SecurityManager
 {
+    public bool $preventGlobalNameSpacePollution = false;
+    public ?string $allowedNamespace = null;
+
     private array $allowedFunctions = [
         'func_num_args',
         'func_get_arg',
@@ -500,7 +503,9 @@ class SecurityManager
             $functionName = "{$this->currentNamespace}\\{$functionName}";
         }
 
-        $this->allowedFunctions[] = $functionName;
+        if (!\in_array($functionName, $this->allowedFunctions, true)) {
+            $this->allowedFunctions[] = $functionName;
+        }
     }
 
     public function setAllowedClasses(array $allowedClasses)
@@ -517,6 +522,13 @@ class SecurityManager
     {
         if ($currentNamespace !== null) {
             $currentNamespace = \ltrim($currentNamespace, '\\');
+
+            if (
+                $this->allowedNamespace !== null
+                && !str_starts_with($currentNamespace, \ltrim($this->allowedNamespace, '\\'))
+            ) {
+                throw new SecurityException("Namespace {$currentNamespace} is outside of allowed namespace {$this->allowedNamespace}" );
+            }
         }
 
         $this->currentNamespace = !empty($currentNamespace) ? $currentNamespace : null;
@@ -554,6 +566,12 @@ class SecurityManager
             throw new SecurityException('Call to a not allowed function ' . $functionName);
         }
 
+        if ( $functionName === 'define' )
+        {
+            $this->checkDefineDefine();
+            return;
+        }
+
         // check specific function arguments
         if ($functionName === 'array_map') {
             $callable = $this->getArgumentAt($arguments, 0);
@@ -588,10 +606,16 @@ class SecurityManager
 
         // check <function>
         if (!\str_contains($functionName, '\\')) {
-            return "{$this->currentNamespace()}\\{$functionName}";
+            if ($this->currentNamespace === null) {
+                return $functionName;
+            }
+
+            // Check if the function has been created/allowed in the current namespace else use global
+            $_functionName = "{$this->currentNamespace()}\\{$functionName}";
+            return \in_array($_functionName, $this->allowedFunctions, true) ? $_functionName : $functionName;
         }
         // check namespace\<function>
-        elseif (\str_starts_with($functionName, 'namespace\\')) {
+        elseif ($this->currentNamespace !== null && \str_starts_with($functionName, 'namespace\\')) {
             return "{$this->currentNamespace()}\\" . \substr($functionName, \strlen('namespace\\'));
         }
         // check \foo\<function> or foo\<function>
@@ -629,6 +653,43 @@ class SecurityManager
         } elseif ($value instanceof Node\Expr\Closure) {
         } else {
             throw new SecurityException('Usage of an invalid callable type, only string and closure allowed');
+        }
+    }
+
+    /**
+     * @throws SecurityException
+     */
+    public function defineFunction(string $functionName): void
+    {
+        $this->checkDefineFunction();
+
+        $this->addAllowedFunction($functionName);
+    }
+
+    /**
+     * @throws SecurityException
+     */
+    public function checkDefineFunction(): void
+    {
+        if ($this->preventGlobalNameSpacePollution && $this->currentNamespace === null) {
+            throw new SecurityException('Defining functions in global namespace is not allowed');
+        }
+    }
+
+    /**
+     * @throws SecurityException
+     */
+    public function checkDefineConstant(): void
+    {
+        if ($this->preventGlobalNameSpacePollution && $this->currentNamespace === null) {
+            throw new SecurityException('Defining constants in global namespace is not allowed');
+        }
+    }
+
+    public function checkDefineDefine(): void
+    {
+        if ($this->preventGlobalNameSpacePollution) {
+            throw new SecurityException('Defining constants in global namespace is not allowed');
         }
     }
 

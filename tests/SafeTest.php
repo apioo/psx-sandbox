@@ -32,9 +32,9 @@ class SafeTest extends PHPTestCase
     /**
      * @dataProvider caseProvider
      */
-    public function testSafe($name, $code, $expect)
+    public function testSafe($name, $code, $expect, ?array $options )
     {
-        $result = $this->newRuntime(md5($code))->run($code);
+        $result = $this->newRuntime(md5($code), $options)->run($code);
 
         $this->assertEquals($expect, $result, $name);
     }

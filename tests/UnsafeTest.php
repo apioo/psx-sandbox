@@ -34,11 +34,11 @@ class UnsafeTest extends PHPTestCase
     /**
      * @dataProvider caseProvider
      */
-    public function testSafe($name, $code, $expect)
+    public function testSafe($name, $code, $expect, ?array $options)
     {
         $this->expectException(SecurityException::class);
 
-        $this->newRuntime(md5($code))->run($code);
+        $this->newRuntime(md5($code), $options)->run($code);
     }
 
     protected function getDir()
