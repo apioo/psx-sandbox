@@ -6,6 +6,10 @@ namespace PSX\Sandbox;
 
 class SecurityManagerConfiguration
 {
+    /**
+     * @param bool $preventGlobalNameSpacePollution This will prevent creating functions and constanta in the global name space.
+     * @param string|null $allowedNamespace Restricts any namespaced code to be the same or a sub-namespace of the value.
+     */
     public function __construct(
         private bool $preventGlobalNameSpacePollution = false,
         private ?string $allowedNamespace = null,

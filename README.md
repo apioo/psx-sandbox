@@ -51,5 +51,28 @@ CODE;
 $runtime = new \PSX\Sandbox\Runtime('my_code');
 $runtime->set('my_service', 'foo');
 $response = $runtime->run($code);
-
 ```
+
+### Advanced configuration
+Configurations are set by passing an instance of `\PSX\Sandbox\SecurityManagerConfiguration`
+```php
+<?php
+
+$config = new \PSX\Sandbox\SecurityManagerConfiguration( 
+    preventGlobalNameSpacePollution: true
+);
+$securityManager = new \PSX\Sandbox\SecurityManager($securityManagerConfig);
+$parser = new \PSX\Sandbox\Parser($securityManager);
+        
+$runtime = new \PSX\Sandbox\Runtime('my_code', $parser);
+$runtime->set('my_service', 'foo');
+$response = $runtime->run( '<php? return $my_service;' );
+```
+* preventGlobalNameSpacePollution (bool): This will prevent creating functions and constants in the global name space.
+* allowedNamespace (null|string): Restricts any namespaced code to be the same or a sub-namespace of the value.
+
+## Requirements
+* PHP 8.0+
+
+## Installation
+Install with composer `composer require psx/sandbox`
