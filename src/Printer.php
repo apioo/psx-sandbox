@@ -136,7 +136,7 @@ class Printer extends Standard
 
     protected function pStmt_Function(Stmt\Function_ $node)
     {
-        $this->securityManager->defineFunction((string) $node->name );
+        $this->securityManager->defineFunction((string)$node->name);
 
         return parent::pStmt_Function($node);
     }

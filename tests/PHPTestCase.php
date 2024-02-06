@@ -24,6 +24,7 @@ use PHPUnit\Framework\TestCase;
 use PSX\Sandbox\Parser;
 use PSX\Sandbox\Runtime;
 use PSX\Sandbox\SecurityManager;
+use PSX\Sandbox\SecurityManagerConfiguration;
 
 /**
  * PHPTestCase
@@ -61,14 +62,15 @@ abstract class PHPTestCase extends TestCase
      */
     protected function newRuntime(string $token, ?array $options) : \PSX\Sandbox\Runtime
     {
-        $securityManager = new SecurityManager();
-        if (isset($options['SecurityManager'])) {
-            foreach ($options['SecurityManager'] as $property => $value) {
-                $securityManager->{$property} = $value;
-            }
+        $securityManagerConfig = null;
+        if (isset($options['SecurityManager']) && \is_array($options['SecurityManager'])) {
+            $securityManagerConfig = SecurityManagerConfiguration::fromArray($options['SecurityManager']);
         }
 
-        $parser = new Parser( $securityManager );
+        $securityManager = new SecurityManager($securityManagerConfig);
+
+        $parser = new Parser($securityManager);
+
         $runtime = new Runtime($token, $parser, __DIR__ . '/cache');
 
         $runtime->set('foo', 'bar');

@@ -31,9 +31,6 @@ use PhpParser\Node;
  */
 class SecurityManager
 {
-    public bool $preventGlobalNameSpacePollution = false;
-    public ?string $allowedNamespace = null;
-
     private array $allowedFunctions = [
         'func_num_args',
         'func_get_arg',
@@ -495,6 +492,12 @@ class SecurityManager
     private array $classAliases = [];
 
     private null|string $currentNamespace = null;
+    private SecurityManagerConfiguration $config;
+
+    public function __construct(?SecurityManagerConfiguration $config = null)
+    {
+        $this->config = $config ?? new SecurityManagerConfiguration();
+    }
 
 
     public function setAllowedFunctions(array $allowedFunctions)
@@ -529,10 +532,10 @@ class SecurityManager
             $currentNamespace = \ltrim($currentNamespace, '\\');
 
             if (
-                $this->allowedNamespace !== null
-                && !str_starts_with($currentNamespace, \ltrim($this->allowedNamespace, '\\'))
+                $this->config->allowedNamespace() !== null
+                && !str_starts_with($currentNamespace, \ltrim($this->config->allowedNamespace(), '\\'))
             ) {
-                throw new SecurityException("Namespace {$currentNamespace} is outside of allowed namespace {$this->allowedNamespace}" );
+                throw new SecurityException("Namespace {$currentNamespace} is outside of allowed namespace {$this->config->allowedNamespace()}" );
             }
         }
 
@@ -676,7 +679,7 @@ class SecurityManager
      */
     public function checkDefineFunction(): void
     {
-        if ($this->preventGlobalNameSpacePollution && $this->currentNamespace === null) {
+        if ($this->config->preventGlobalNameSpacePollution() && $this->currentNamespace === null) {
             throw new SecurityException('Defining functions in global namespace is not allowed');
         }
     }
@@ -686,14 +689,14 @@ class SecurityManager
      */
     public function checkDefineConstant(): void
     {
-        if ($this->preventGlobalNameSpacePollution && $this->currentNamespace === null) {
+        if ($this->config->preventGlobalNameSpacePollution() && $this->currentNamespace === null) {
             throw new SecurityException('Defining constants in global namespace is not allowed');
         }
     }
 
     public function checkDefineDefine(): void
     {
-        if ($this->preventGlobalNameSpacePollution) {
+        if ($this->config->preventGlobalNameSpacePollution()) {
             throw new SecurityException('Defining constants in global namespace is not allowed');
         }
     }
