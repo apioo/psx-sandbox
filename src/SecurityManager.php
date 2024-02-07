@@ -526,6 +526,9 @@ class SecurityManager
         $this->allowedClasses[] = $className;
     }
 
+    /**
+     * @throws SecurityException
+     */
     public function setCurrentNamespace(?string $currentNamespace): void
     {
         if ($currentNamespace !== null) {

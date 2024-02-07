@@ -33,6 +33,9 @@ class SecurityManagerConfiguration
         return $self;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function preventGlobalNameSpacePollution(): bool
     {
         return $this->preventGlobalNameSpacePollution;
@@ -43,6 +46,9 @@ class SecurityManagerConfiguration
         $this->preventGlobalNameSpacePollution = $preventGlobalNameSpacePollution;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function allowedNamespace(): ?string
     {
         return $this->allowedNamespace;
