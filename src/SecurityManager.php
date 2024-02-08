@@ -230,6 +230,11 @@ class SecurityManager
         'addslashes',
         'addcslashes',
         'rtrim',
+        'str_contains',
+        'str_starts_with',
+        'str_ends_with',
+        'str_decrement',
+        'str_increment',
         'str_replace',
         'str_ireplace',
         'str_repeat',
@@ -483,14 +488,32 @@ class SecurityManager
         'Swift_Message',
     ];
 
+    private array $functionAliases = [];
+    private array $classAliases = [];
+
+    private null|string $currentNamespace = null;
+    private SecurityManagerConfiguration $config;
+
+    public function __construct(?SecurityManagerConfiguration $config = null)
+    {
+        $this->config = $config ?? new SecurityManagerConfiguration();
+    }
+
+
     public function setAllowedFunctions(array $allowedFunctions)
     {
         $this->allowedFunctions = $allowedFunctions;
     }
 
-    public function addAllowedFunction(string $functionName)
+    public function addAllowedFunction(string $functionName): void
     {
-        $this->allowedFunctions[] = $functionName;
+        if ($this->currentNamespace !== null) {
+            $functionName = "{$this->currentNamespace}\\{$functionName}";
+        }
+
+        if (!\in_array($functionName, $this->allowedFunctions, true)) {
+            $this->allowedFunctions[] = $functionName;
+        }
     }
 
     public function setAllowedClasses(array $allowedClasses)
@@ -506,31 +529,77 @@ class SecurityManager
     /**
      * @throws SecurityException
      */
+    public function setCurrentNamespace(?string $currentNamespace): void
+    {
+        if ($currentNamespace !== null) {
+            $currentNamespace = \ltrim($currentNamespace, '\\');
+
+            if (
+                $this->config->allowedNamespace() !== null
+                && !str_starts_with($currentNamespace, \ltrim($this->config->allowedNamespace(), '\\'))
+            ) {
+                throw new SecurityException("Namespace {$currentNamespace} is outside of allowed namespace {$this->config->allowedNamespace()}" );
+            }
+        }
+
+        $this->currentNamespace = !empty($currentNamespace) ? $currentNamespace : null;
+    }
+
+    public function currentNamespace(): null|string
+    {
+        return $this->currentNamespace;
+    }
+
+    public function addFunctionAlias(string $function, string $alias): void
+    {
+        $this->functionAliases[$alias] = $function;
+    }
+
+    public function addClassAlias(string $class, string $alias): void
+    {
+        $this->classAliases[$alias] = $class;
+    }
+
+    /**
+     * @throws SecurityException
+     */
     public function checkFunctionCall(string $functionName, array $arguments = [])
     {
+        if (isset($this->functionAliases[$functionName])) {
+            $functionName = $this->functionAliases[$functionName];
+        }
+
+        $functionName = $this->fullyQualifyNamespacedFunction($functionName);
+
         $functionName = ltrim($functionName, '\\');
 
         if (!in_array($functionName, $this->allowedFunctions)) {
             throw new SecurityException('Call to a not allowed function ' . $functionName);
         }
 
+        if ( $functionName === 'define' )
+        {
+            $this->checkDefineDefine();
+            return;
+        }
+
         // check specific function arguments
         if ($functionName === 'array_map') {
-            $callable = $this->getArgumentAt($arguments, 0);
+            $callable = $this->getArgumentAt($functionName, $arguments, 0);
             if ($callable instanceof Node\Arg) {
                 $this->checkCallable($callable);
             } else {
                 throw new SecurityException('array_map missing callable at position 0');
             }
         } elseif ($functionName === 'iterator_apply' || $functionName === 'array_walk' || $functionName === 'array_walk_recursive' || $functionName === 'array_reduce' || $functionName === 'array_filter') {
-            $callable = $this->getArgumentAt($arguments, 1);
+            $callable = $this->getArgumentAt($functionName, $arguments, 1);
             if ($callable instanceof Node\Arg) {
                 $this->checkCallable($callable);
             } else {
                 throw new SecurityException($functionName . ' missing callable at position 1');
             }
         } elseif ($functionName === 'usort' || $functionName === 'uasort' || $functionName === 'uksort') {
-            $callable = $this->getArgumentAt($arguments, 1);
+            $callable = $this->getArgumentAt($functionName, $arguments, 1);
             if ($callable instanceof Node\Arg) {
                 $this->checkCallable($callable);
             } else {
@@ -539,11 +608,44 @@ class SecurityManager
         }
     }
 
+    private function fullyQualifyNamespacedFunction(string $functionName): string
+    {
+        // check \<function> <= explicit call to global function
+        if (\preg_match('/^\\\\[\w]+$/', $functionName)) {
+            return $functionName;
+        }
+
+        // check <function>
+        if (!\str_contains($functionName, '\\')) {
+            if ($this->currentNamespace === null) {
+                return $functionName;
+            }
+
+            // Check if the function has been created/allowed in the current namespace else use global
+            $_functionName = "{$this->currentNamespace()}\\{$functionName}";
+            return \in_array($_functionName, $this->allowedFunctions, true) ? $_functionName : $functionName;
+        }
+        // check namespace\<function>
+        elseif ($this->currentNamespace !== null && \str_starts_with($functionName, 'namespace\\')) {
+            return "{$this->currentNamespace()}\\" . \substr($functionName, \strlen('namespace\\'));
+        }
+        // check \foo\<function> or foo\<function>
+        elseif (\preg_match_all('/^(\\\\?[\w\\\\]+)\\\\(\w+)$/', $functionName, $matches)) {
+            return \ltrim($matches[1][0], '\\') . "\\{$matches[2][0]}";
+        }
+
+        return $functionName;
+    }
+
     /**
      * @throws SecurityException
      */
     public function checkNewCall(string $className)
     {
+        if (isset($this->classAliases[$className])) {
+            $className = $this->classAliases[$className];
+        }
+
         $className = ltrim($className, '\\');
 
         if (!in_array($className, $this->allowedClasses)) {
@@ -565,11 +667,59 @@ class SecurityManager
         }
     }
 
-    private function getArgumentAt(array $nodes, int $pos): ?Node\Arg
+    /**
+     * @throws SecurityException
+     */
+    public function defineFunction(string $functionName): void
     {
-        $nodes = array_filter($nodes, function($node){
+        $this->checkDefineFunction();
+
+        $this->addAllowedFunction($functionName);
+    }
+
+    /**
+     * @throws SecurityException
+     */
+    public function checkDefineFunction(): void
+    {
+        if ($this->config->preventGlobalNameSpacePollution() && $this->currentNamespace === null) {
+            throw new SecurityException('Defining functions in global namespace is not allowed');
+        }
+    }
+
+    /**
+     * @throws SecurityException
+     */
+    public function checkDefineConstant(): void
+    {
+        if ($this->config->preventGlobalNameSpacePollution() && $this->currentNamespace === null) {
+            throw new SecurityException('Defining constants in global namespace is not allowed');
+        }
+    }
+
+    public function checkDefineDefine(): void
+    {
+        if ($this->config->preventGlobalNameSpacePollution()) {
+            throw new SecurityException('Defining constants in global namespace is not allowed');
+        }
+    }
+
+    private function getArgumentAt(string $functionName, array $nodes, int $pos): ?Node\Arg
+    {
+        $nodes = array_filter($nodes, function ($node) {
             return $node instanceof Node\Arg;
         });
+
+        /** @var callable-string $functionName */
+        $reflection = new \ReflectionFunction($functionName);
+        $name = $reflection->getParameters()[$pos]->getName();
+
+        /** @var Node\Arg $node */
+        foreach ($nodes as $node) {
+            if ((string)$node->name === $name) {
+                return $node;
+            }
+        }
 
         return $nodes[$pos] ?? null;
     }

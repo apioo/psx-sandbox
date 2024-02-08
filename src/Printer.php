@@ -136,9 +136,15 @@ class Printer extends Standard
 
     protected function pStmt_Function(Stmt\Function_ $node)
     {
-        $this->securityManager->addAllowedFunction((string) $node->name);
+        $this->securityManager->defineFunction((string)$node->name);
 
         return parent::pStmt_Function($node);
+    }
+
+    protected function pConst(\PhpParser\Node\Const_ $node)
+    {
+        $this->securityManager->checkDefineConstant();
+        return parent::pConst($node);
     }
 
     protected function pStmt_Declare(Stmt\Declare_ $node)
@@ -175,4 +181,40 @@ class Printer extends Standard
     {
         throw new SecurityException('Class is not allowed');
     }
+
+    protected function pStmt_Namespace(Stmt\Namespace_ $node)
+    {
+        $this->securityManager->setCurrentNamespace($node->name !== null ? (string)$node->name : null);
+
+        return parent::pStmt_Namespace( $node );
+    }
+
+    protected function pStmt_Use(Stmt\Use_ $node)
+    {
+        foreach ($node->uses as $use) {
+            if ($node->type === Stmt\Use_::TYPE_NORMAL) {
+                $this->securityManager->addClassAlias((string)$use->name, (string)($use->alias ?? $use->name));
+            }
+            elseif ($node->type === Stmt\Use_::TYPE_FUNCTION) {
+                $this->securityManager->addFunctionAlias((string)$use->name, (string)($use->alias ?? $use->name));
+            }
+        }
+
+        return parent::pStmt_Use( $node );
+    }
+
+    protected function pStmt_GroupUse(Stmt\GroupUse $node)
+    {
+        foreach ($node->uses as $use) {
+            if ($node->type === Stmt\Use_::TYPE_NORMAL) {
+                $this->securityManager->addClassAlias((string)$use->name, (string)($use->alias ?? $use->name));
+            }
+            elseif ($node->type === Stmt\Use_::TYPE_FUNCTION) {
+                $this->securityManager->addFunctionAlias((string)$use->name, (string)($use->alias ?? $use->name));
+            }
+        }
+
+        return parent::pStmt_GroupUse( $node );
+    }
+
 }

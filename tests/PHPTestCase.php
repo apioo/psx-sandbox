@@ -21,7 +21,10 @@
 namespace PSX\Sandbox\Tests;
 
 use PHPUnit\Framework\TestCase;
+use PSX\Sandbox\Parser;
 use PSX\Sandbox\Runtime;
+use PSX\Sandbox\SecurityManager;
+use PSX\Sandbox\SecurityManagerConfiguration;
 
 /**
  * PHPTestCase
@@ -45,6 +48,7 @@ abstract class PHPTestCase extends TestCase
                     $sections['TEST'] ?? null, 
                     $sections['FILE'] ?? null, 
                     isset($sections['EXPECT']) ? json_decode($sections['EXPECT'], true) : null,
+                    isset($sections['OPTIONS']) ? json_decode($sections['OPTIONS'], true) : null,
                 ];
             }
         }
@@ -56,9 +60,19 @@ abstract class PHPTestCase extends TestCase
      * @param string $token
      * @return \PSX\Sandbox\Runtime
      */
-    protected function newRuntime($token)
+    protected function newRuntime(string $token, ?array $options) : \PSX\Sandbox\Runtime
     {
-        $runtime = new Runtime($token, null, __DIR__ . '/cache');
+        $securityManagerConfig = null;
+        if (isset($options['SecurityManager']) && \is_array($options['SecurityManager'])) {
+            $securityManagerConfig = SecurityManagerConfiguration::fromArray($options['SecurityManager']);
+        }
+
+        $securityManager = new SecurityManager($securityManagerConfig);
+
+        $parser = new Parser($securityManager);
+
+        $runtime = new Runtime($token, $parser, __DIR__ . '/cache');
+
         $runtime->set('foo', 'bar');
         $runtime->set('service', new FooService());
 
