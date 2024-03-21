@@ -1,5 +1,5 @@
 --TEST--
-iterator_apply closure callback
+Class aliasing
 --FILE--
 <?php
 

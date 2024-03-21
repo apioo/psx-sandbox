@@ -640,7 +640,7 @@ class SecurityManager
     /**
      * @throws SecurityException
      */
-    public function checkNewCall(string $className)
+    public function checkClassIsAllowed(string $className) : void
     {
         if (isset($this->classAliases[$className])) {
             $className = $this->classAliases[$className];
