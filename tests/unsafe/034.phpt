@@ -1,5 +1,5 @@
 --TEST--
-Execute function through map
+Execute function through match
 --FILE--
 <?php
 
