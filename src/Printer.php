@@ -20,6 +20,7 @@
 
 namespace PSX\Sandbox;
 
+use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Stmt;
 use PhpParser\PrettyPrinter\Standard;
@@ -74,9 +75,18 @@ class Printer extends Standard
 
         $class = $this->p($node->class);
 
-        $this->securityManager->checkNewCall($class);
+        $this->securityManager->checkClassIsAllowed($class);
 
         return parent::pExpr_New($node);
+    }
+
+    protected function pStaticDereferenceLhs(Node $node)
+    {
+        $class = $this->p($node);
+
+        $this->securityManager->checkClassIsAllowed($class);
+
+        return parent::pStaticDereferenceLhs($node);
     }
 
     protected function pExpr_Exit(Expr\Exit_ $node)
@@ -160,6 +170,17 @@ class Printer extends Standard
     protected function pStmt_Echo(Stmt\Echo_ $node)
     {
         throw new SecurityException('Echo is not allowed');
+    }
+
+    protected function pStmt_Expression(Stmt\Expression $node)
+    {
+        $expression = $this->p($node->expr);
+
+        if (\preg_match('/print\W+/i', $expression)) {
+            throw new SecurityException('Print is not allowed');
+        }
+
+        return $expression . ';';
     }
 
     protected function pStmt_Global(Stmt\Global_ $node)
