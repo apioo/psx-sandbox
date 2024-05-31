@@ -44,11 +44,25 @@ abstract class PHPTestCase extends TestCase
         foreach ($files as $file) {
             if (substr($file, -5) == '.phpt' && is_file($path . '/' . $file)) {
                 $sections = $this->parseSections($path . '/' . $file);
+
+                foreach (['EXPECT', 'OPTIONS'] as $key) {
+                    try {
+                        $decodedValues[$key] = isset($sections[$key]) ? \json_decode(
+                            $sections[$key],
+                            true,
+                            512,
+                            \JSON_THROW_ON_ERROR
+                        ) : null;
+                    } catch (\JsonException $exception) {
+                        throw new \Exception("Invalid JSON for {$key} in file {$path}/{$file}\n" . $exception->getMessage(), 0, $exception);
+                    }
+                }
+
                 $data[] = [
-                    $sections['TEST'] ?? null, 
-                    $sections['FILE'] ?? null, 
-                    isset($sections['EXPECT']) ? json_decode($sections['EXPECT'], true) : null,
-                    isset($sections['OPTIONS']) ? json_decode($sections['OPTIONS'], true) : null,
+                    $sections['TEST'] ?? null,
+                    $sections['FILE'] ?? null,
+                    $decodedValues['EXPECT'],
+                    $decodedValues['OPTIONS'],
                 ];
             }
         }
@@ -69,6 +83,12 @@ abstract class PHPTestCase extends TestCase
 
         $securityManager = new SecurityManager($securityManagerConfig);
 
+        if (isset($options['allowedClasses']) && \is_array($options['allowedClasses'])) {
+            foreach ($options['allowedClasses'] as $allowedClass) {
+                $securityManager->addAllowedClass($allowedClass);
+            }
+        }
+
         $parser = new Parser($securityManager);
 
         $runtime = new Runtime($token, $parser, __DIR__ . '/cache');
@@ -78,7 +98,7 @@ abstract class PHPTestCase extends TestCase
 
         return $runtime;
     }
-    
+
     /**
      * @return string
      */

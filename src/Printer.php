@@ -214,7 +214,7 @@ class Printer extends Standard
     {
         foreach ($node->uses as $use) {
             if ($node->type === Stmt\Use_::TYPE_NORMAL) {
-                $this->securityManager->addClassAlias((string)$use->name, (string)($use->alias ?? $use->name));
+                $this->securityManager->addClassAlias((string)$use->name, $use->alias !== null ? (string)$use->alias : null);
             }
             elseif ($node->type === Stmt\Use_::TYPE_FUNCTION) {
                 $this->securityManager->addFunctionAlias((string)$use->name, (string)($use->alias ?? $use->name));
@@ -228,7 +228,7 @@ class Printer extends Standard
     {
         foreach ($node->uses as $use) {
             if ($node->type === Stmt\Use_::TYPE_NORMAL) {
-                $this->securityManager->addClassAlias((string)$use->name, (string)($use->alias ?? $use->name));
+                $this->securityManager->addClassAlias((string)$use->name, $use->alias !== null ? (string)$use->alias : null);
             }
             elseif ($node->type === Stmt\Use_::TYPE_FUNCTION) {
                 $this->securityManager->addFunctionAlias((string)$use->name, (string)($use->alias ?? $use->name));
