@@ -555,8 +555,13 @@ class SecurityManager
         $this->functionAliases[$alias] = $function;
     }
 
-    public function addClassAlias(string $class, string $alias): void
+    public function addClassAlias(string $class, ?string $alias): void
     {
+        if ($alias === null) {
+            $parts = \explode('\\', \ltrim($class, '\\'));
+            $alias = $parts[\array_key_last($parts)];
+        }
+
         $this->classAliases[$alias] = $class;
     }
 
