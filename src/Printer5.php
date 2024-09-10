@@ -57,6 +57,9 @@ class Printer5 extends Standard
         throw new SecurityException('Eval is not allowed');
     }
 
+    /**
+     * @psalm-suppress MethodSignatureMismatch
+     */
     protected function pExpr_Include(Expr\Include_ $node, int $precedence, int $lhsPrecedence): string
     {
         throw new SecurityException('Include is not allowed');

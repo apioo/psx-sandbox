@@ -50,6 +50,7 @@ class Parser
      * 
      * @throws SecurityException
      * @throws ParseException
+     * @psalm-suppress RedundantCondition
      */
     public function parse(string $code): string
     {
