@@ -33,10 +33,10 @@ use PhpParser\ParserFactory;
 class Parser
 {
     private SecurityManager $securityManager;
-    private int $parserType;
+    private ?int $parserType;
     private ParserFactory $parserFactory;
 
-    public function __construct(SecurityManager $securityManager = null, $parserType = ParserFactory::PREFER_PHP7)
+    public function __construct(SecurityManager $securityManager = null, ?int $parserType = null)
     {
         $this->securityManager = $securityManager ?? new SecurityManager();
         $this->parserType      = $parserType;
@@ -53,7 +53,13 @@ class Parser
      */
     public function parse(string $code): string
     {
-        $parser = $this->parserFactory->create($this->parserType);
+        if (method_exists($this->parserFactory, 'createForNewestSupportedVersion')) {
+            $parser = $this->parserFactory->createForNewestSupportedVersion();
+            $printer = new Printer5($this->securityManager);
+        } else {
+            $parser = $this->parserFactory->create($this->parserType ?? ParserFactory::PREFER_PHP7);
+            $printer = new Printer($this->securityManager);
+        }
 
         try {
             $ast = $parser->parse($code);
@@ -65,7 +71,6 @@ class Parser
             throw new ParseException('Found no tokens');
         }
 
-        $printer = new Printer($this->securityManager);
         return $printer->prettyPrintFile($ast);
     }
 }
