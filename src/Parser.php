@@ -54,12 +54,12 @@ class Parser
      */
     public function parse(string $code): string
     {
-        if (method_exists($this->parserFactory, 'createForNewestSupportedVersion')) {
-            $parser = $this->parserFactory->createForNewestSupportedVersion();
-            $printer = new Printer5($this->securityManager);
-        } else {
-            $parser = $this->parserFactory->create($this->parserType ?? ParserFactory::PREFER_PHP7);
+        $parser = $this->parserFactory->createForNewestSupportedVersion();
+
+        if (defined('PhpParser\ParserFactory::PREFER_PHP7')) {
             $printer = new Printer($this->securityManager);
+        } else {
+            $printer = new Printer5($this->securityManager);
         }
 
         try {
