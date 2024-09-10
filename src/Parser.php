@@ -33,13 +33,11 @@ use PhpParser\ParserFactory;
 class Parser
 {
     private SecurityManager $securityManager;
-    private ?int $parserType;
     private ParserFactory $parserFactory;
 
-    public function __construct(SecurityManager $securityManager = null, ?int $parserType = null)
+    public function __construct(?SecurityManager $securityManager = null)
     {
         $this->securityManager = $securityManager ?? new SecurityManager();
-        $this->parserType      = $parserType;
         $this->parserFactory   = new ParserFactory();
     }
 
@@ -47,8 +45,7 @@ class Parser
      * Parses untrusted PHP code and returns a secure version which only 
      * contains safe calls. Throws an exception in case the code contains 
      * untrusted calls
-     * 
-     * @throws SecurityException
+     *
      * @throws ParseException
      * @psalm-suppress RedundantCondition
      */
