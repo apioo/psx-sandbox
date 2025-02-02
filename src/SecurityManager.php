@@ -719,7 +719,6 @@ class SecurityManager
         $reflection = new \ReflectionFunction($functionName);
         $name = $reflection->getParameters()[$pos]->getName();
 
-        /** @var Node\Arg $node */
         foreach ($nodes as $node) {
             if ((string)$node->name === $name) {
                 return $node;
